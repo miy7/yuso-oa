@@ -1,22 +1,200 @@
-generator client { provider = "prisma-client-js" }
-datasource db { provider = "postgresql" url = env("DATABASE_URL") }
+generator client {
+  provider = "prisma-client-js"
+}
 
-enum AdminRole { OWNER STAFF }
-enum FulfillmentMethod { DELIVERY PICKUP }
-enum OrderStatus { PENDING_LOCATION PENDING_DELIVERY_CONFIRMATION PENDING_PAYMENT CONFIRMED PREPARING READY_FOR_PICKUP READY_FOR_DELIVERY OUT_FOR_DELIVERY COMPLETED CANCELLED }
-enum PaymentMethod { BANK_TRANSFER CASH }
-enum PaymentStatus { UNPAID PENDING_REVIEW PAID REJECTED REFUNDED }
-model AdminUser { id String @id @default(cuid()) email String @unique name String role AdminRole @default(STAFF) passwordHash String createdAt DateTime @default(now()) updatedAt DateTime @updatedAt orders OrderStatusHistory[] }
-model Customer { id String @id @default(cuid()) displayName String? phone String? createdAt DateTime @default(now()) updatedAt DateTime @updatedAt lineIdentity LineIdentity? orders Order[] }
-model LineIdentity { id String @id @default(cuid()) customerId String @unique lineUserId String @unique createdAt DateTime @default(now()) customer Customer @relation(fields: [customerId], references: [id]) }
-model Category { id String @id @default(cuid()) name String slug String @unique sortOrder Int @default(0) products Product[] }
-model Product { id String @id @default(cuid()) categoryId String nameTh String nameEn String? description String? priceSatang Int imageUrl String? isAvailable Boolean @default(true) sortOrder Int @default(0) category Category @relation(fields: [categoryId], references: [id]) items OrderItem[] }
-model Order { id String @id @default(cuid()) orderNumber String @unique customerId String fulfillment FulfillmentMethod status OrderStatus paymentMethod PaymentMethod paymentStatus PaymentStatus subtotalSatang Int deliveryFeeSatang Int totalSatang Int customerNote String? createdAt DateTime @default(now()) updatedAt DateTime @updatedAt customer Customer @relation(fields: [customerId], references: [id]) items OrderItem[] delivery DeliveryDetails? payments Payment[] history OrderStatusHistory[] idempotencyKeys IdempotencyKey[] @@index([status, createdAt]) @@index([customerId, createdAt]) }
-model OrderItem { id String @id @default(cuid()) orderId String productId String productName String customization Json? unitPriceSatang Int quantity Int order Order @relation(fields: [orderId], references: [id]) product Product @relation(fields: [productId], references: [id]) }
-model Payment { id String @id @default(cuid()) orderId String method PaymentMethod status PaymentStatus slipUrl String? verifiedBy String? verifiedAt DateTime? createdAt DateTime @default(now()) order Order @relation(fields: [orderId], references: [id]) }
-model DeliveryDetails { id String @id @default(cuid()) orderId String @unique correlationTokenHash String @unique latitude Float? longitude Float? addressNote String? confirmedFeeSatang Int? order Order @relation(fields: [orderId], references: [id]) }
-model OrderStatusHistory { id String @id @default(cuid()) orderId String status OrderStatus changedById String? note String? createdAt DateTime @default(now()) order Order @relation(fields: [orderId], references: [id]) admin AdminUser? @relation(fields: [changedById], references: [id]) }
-model IdempotencyKey { id String @id @default(cuid()) key String @unique orderId String? createdAt DateTime @default(now()) order Order? @relation(fields: [orderId], references: [id]) }
-model WebhookEvent { id String @id @default(cuid()) eventId String @unique payload Json createdAt DateTime @default(now()) processedAt DateTime? }
-model NotificationOutbox { id String @id @default(cuid()) orderId String? type String payload Json attempts Int @default(0) sentAt DateTime? lastError String? createdAt DateTime @default(now()) @@index([sentAt, createdAt]) }
-model BusinessSettings { id String @id @default(cuid()) timezone String @default("Asia/Bangkok") openingTime String closingTime String daysOfOperation Json temporaryClosed Boolean @default(false) bankTransferInstructions String? updatedAt DateTime @updatedAt }
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum AdminRole {
+  OWNER
+  STAFF
+}
+enum FulfillmentMethod {
+  DELIVERY
+  PICKUP
+}
+enum OrderStatus {
+  PENDING_LOCATION
+  PENDING_DELIVERY_CONFIRMATION
+  PENDING_PAYMENT
+  CONFIRMED
+  PREPARING
+  READY_FOR_PICKUP
+  READY_FOR_DELIVERY
+  OUT_FOR_DELIVERY
+  COMPLETED
+  CANCELLED
+}
+enum PaymentMethod {
+  BANK_TRANSFER
+  CASH
+}
+enum PaymentStatus {
+  UNPAID
+  PENDING_REVIEW
+  PAID
+  REJECTED
+  REFUNDED
+}
+
+model AdminUser {
+  id String @id @default(cuid())
+  email String @unique
+  name String
+  role AdminRole @default(STAFF)
+  passwordHash String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  history OrderStatusHistory[]
+}
+
+model Customer {
+  id String @id @default(cuid())
+  displayName String?
+  phone String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  lineIdentity LineIdentity?
+  orders Order[]
+}
+
+model LineIdentity {
+  id String @id @default(cuid())
+  customerId String @unique
+  lineUserId String @unique
+  createdAt DateTime @default(now())
+  customer Customer @relation(fields: [customerId], references: [id])
+}
+
+model Category {
+  id String @id @default(cuid())
+  name String
+  slug String @unique
+  sortOrder Int @default(0)
+  products Product[]
+}
+
+model Product {
+  id String @id @default(cuid())
+  categoryId String
+  nameTh String
+  nameEn String?
+  description String?
+  priceSatang Int
+  imageUrl String?
+  isAvailable Boolean @default(true)
+  sortOrder Int @default(0)
+  category Category @relation(fields: [categoryId], references: [id])
+  items OrderItem[]
+}
+
+model Order {
+  id String @id @default(cuid())
+  orderNumber String @unique
+  customerId String
+  fulfillment FulfillmentMethod
+  status OrderStatus
+  paymentMethod PaymentMethod
+  paymentStatus PaymentStatus
+  subtotalSatang Int
+  deliveryFeeSatang Int
+  totalSatang Int
+  customerNote String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  customer Customer @relation(fields: [customerId], references: [id])
+  items OrderItem[]
+  delivery DeliveryDetails?
+  payments Payment[]
+  history OrderStatusHistory[]
+  idempotencyKeys IdempotencyKey[]
+  @@index([status, createdAt])
+  @@index([customerId, createdAt])
+}
+
+model OrderItem {
+  id String @id @default(cuid())
+  orderId String
+  productId String
+  productName String
+  customization Json?
+  unitPriceSatang Int
+  quantity Int
+  order Order @relation(fields: [orderId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+}
+
+model Payment {
+  id String @id @default(cuid())
+  orderId String
+  method PaymentMethod
+  status PaymentStatus
+  slipUrl String?
+  verifiedBy String?
+  verifiedAt DateTime?
+  createdAt DateTime @default(now())
+  order Order @relation(fields: [orderId], references: [id])
+}
+
+model DeliveryDetails {
+  id String @id @default(cuid())
+  orderId String @unique
+  correlationTokenHash String @unique
+  latitude Float?
+  longitude Float?
+  addressNote String?
+  confirmedFeeSatang Int?
+  order Order @relation(fields: [orderId], references: [id])
+}
+
+model OrderStatusHistory {
+  id String @id @default(cuid())
+  orderId String
+  status OrderStatus
+  changedById String?
+  note String?
+  createdAt DateTime @default(now())
+  order Order @relation(fields: [orderId], references: [id])
+  admin AdminUser? @relation(fields: [changedById], references: [id])
+}
+
+model IdempotencyKey {
+  id String @id @default(cuid())
+  key String @unique
+  orderId String?
+  createdAt DateTime @default(now())
+  order Order? @relation(fields: [orderId], references: [id])
+}
+
+model WebhookEvent {
+  id String @id @default(cuid())
+  eventId String @unique
+  payload Json
+  createdAt DateTime @default(now())
+  processedAt DateTime?
+}
+
+model NotificationOutbox {
+  id String @id @default(cuid())
+  orderId String?
+  type String
+  payload Json
+  attempts Int @default(0)
+  sentAt DateTime?
+  lastError String?
+  createdAt DateTime @default(now())
+  @@index([sentAt, createdAt])
+}
+
+model BusinessSettings {
+  id String @id @default(cuid())
+  timezone String @default("Asia/Bangkok")
+  openingTime String
+  closingTime String
+  daysOfOperation Json
+  temporaryClosed Boolean @default(false)
+  bankTransferInstructions String?
+  updatedAt DateTime @updatedAt
+}

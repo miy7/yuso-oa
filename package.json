@@ -9,10 +9,10 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "@prisma/client": "latest",
+    "@prisma/client": "^6.19.0",
     "lucide-react": "latest",
     "next": "latest",
-    "prisma": "latest",
+    "prisma": "^6.19.0",
     "react": "latest",
     "react-dom": "latest",
     "zod": "latest"
