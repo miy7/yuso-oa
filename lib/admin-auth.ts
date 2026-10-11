@@ -29,7 +29,7 @@ export async function createAdminSession(adminId: string) {
   const token = randomBytes(32).toString('hex')
   await prisma.adminSession.create({ data: { tokenHash: hashToken(token), adminId, expiresAt: new Date(Date.now() + SESSION_TTL_MS) } })
   const cookieStore = await cookies()
-  cookieStore.set(COOKIE_NAME, token, { httpOnly: true, secure: true, sameSite: 'lax', path: '/', maxAge: SESSION_TTL_MS / 1000 })
+  cookieStore.set(COOKIE_NAME, token, { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/', maxAge: SESSION_TTL_MS / 1000 })
 }
 
 export async function getAdminSession() {
@@ -44,7 +44,7 @@ export async function clearAdminSession() {
   const cookieStore = await cookies()
   const token = cookieStore.get(COOKIE_NAME)?.value
   if (token) await prisma.adminSession.deleteMany({ where: { tokenHash: hashToken(token) } })
-  cookieStore.set(COOKIE_NAME, '', { httpOnly: true, secure: true, sameSite: 'lax', path: '/', maxAge: 0 })
+  cookieStore.set(COOKIE_NAME, '', { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/', maxAge: 0 })
 }
 
 export { COOKIE_NAME }

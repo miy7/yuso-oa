@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "db:seed": "tsx prisma/seed.ts",
+    "admin:bootstrap": "tsx prisma/bootstrap-admin.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.19.0",
@@ -21,6 +23,7 @@
     "@types/node": "latest",
     "@types/react": "latest",
     "@types/react-dom": "latest",
+    "tsx": "^4.23.15",
     "typescript": "latest"
   }
 }
