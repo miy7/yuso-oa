@@ -48,6 +48,17 @@ model AdminUser {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   history OrderStatusHistory[]
+  sessions AdminSession[]
+}
+
+model AdminSession {
+  id String @id @default(cuid())
+  tokenHash String @unique
+  adminId String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  admin AdminUser @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  @@index([expiresAt])
 }
 
 model Customer {
@@ -94,6 +105,7 @@ model Order {
   id String @id @default(cuid())
   orderNumber String @unique
   customerId String
+  accessTokenHash String @unique
   fulfillment FulfillmentMethod
   status OrderStatus
   paymentMethod PaymentMethod
