@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { Prisma, FulfillmentMethod, OrderStatus, PaymentMethod, PaymentStatus } from '@prisma/client'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
+import { adminOrderMessage, lineStatusMessage, pushLineText } from '@/lib/line'
 
 const optionValueSchema = z.union([z.string().trim().max(120), z.number().int().nonnegative(), z.boolean()])
 const itemSchema = z.object({
@@ -98,10 +99,16 @@ export async function POST(request: Request) {
         select: { id: true, orderNumber: true, totalSatang: true, status: true, paymentStatus: true },
       })
       await transaction.idempotencyKey.create({ data: { key: input.idempotencyKey, orderId: created.id } })
+      await transaction.notificationOutbox.create({ data: { orderId: created.id, type: 'ORDER_RECEIVED', payload: { orderNumber: created.orderNumber } } })
       return created
     })
 
-    return NextResponse.json({ data: order, accessToken }, { status: 201 })
+    const recipients = await prisma.order.findUnique({ where: { id: order.id }, select: { orderNumber: true, totalSatang: true, fulfillment: true, paymentMethod: true, customer: { select: { lineIdentity: { select: { lineUserId: true } } } } } })
+    const notificationTasks = []
+    if (recipients?.customer.lineIdentity?.lineUserId) notificationTasks.push(pushLineText(recipients.customer.lineIdentity.lineUserId, lineStatusMessage(order.orderNumber, 'ได้รับออเดอร์แล้ว')))
+    if (process.env.LINE_ADMIN_USER_ID && recipients) notificationTasks.push(pushLineText(process.env.LINE_ADMIN_USER_ID, adminOrderMessage(recipients)))
+    void Promise.allSettled(notificationTasks).then((results) => { if (results.some((result) => result.status === 'rejected')) console.error('[orders] LINE notification failed') })
+    return NextResponse.json({ data: order, accessToken, locationToken: input.fulfillment === FulfillmentMethod.DELIVERY ? `${order.orderNumber}:${accessToken}` : undefined }, { status: 201 })
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
       const existingKey = await prisma.idempotencyKey.findUnique({ where: { key: input.idempotencyKey }, include: { order: { select: { id: true, orderNumber: true, totalSatang: true, status: true, paymentStatus: true } } } })

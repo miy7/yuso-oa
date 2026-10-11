@@ -11,6 +11,7 @@
     "admin:bootstrap": "tsx prisma/bootstrap-admin.ts"
   },
   "dependencies": {
+    "@line/liff": "^2.31.2",
     "@prisma/client": "^6.19.0",
     "lucide-react": "latest",
     "next": "latest",
