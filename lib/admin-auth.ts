@@ -40,6 +40,16 @@ export async function getAdminSession() {
   return session.admin
 }
 
+export function hasValidSameOrigin(request: Request) {
+  const origin = request.headers.get('origin')
+  if (!origin) return true
+  try {
+    return new URL(origin).origin === new URL(request.url).origin
+  } catch {
+    return false
+  }
+}
+
 export async function clearAdminSession() {
   const cookieStore = await cookies()
   const token = cookieStore.get(COOKIE_NAME)?.value

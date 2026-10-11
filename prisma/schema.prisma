@@ -154,11 +154,13 @@ model DeliveryDetails {
   id String @id @default(cuid())
   orderId String @unique
   correlationTokenHash String @unique
+  lineUserId String?
   latitude Float?
   longitude Float?
   addressNote String?
   confirmedFeeSatang Int?
   order Order @relation(fields: [orderId], references: [id])
+  @@index([lineUserId, latitude, longitude])
 }
 
 model OrderStatusHistory {

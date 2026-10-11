@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
-import { clearAdminSession, createAdminSession, getAdminSession, verifyPassword } from '@/lib/admin-auth'
+import { clearAdminSession, createAdminSession, getAdminSession, hasValidSameOrigin, verifyPassword } from '@/lib/admin-auth'
 
 const loginSchema = z.object({ email: z.string().email().max(254), password: z.string().min(1).max(200) })
 
@@ -11,6 +11,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  if (!hasValidSameOrigin(request)) return NextResponse.json({ error: 'คำขอไม่ถูกต้อง' }, { status: 403 })
   const parsed = loginSchema.safeParse(await request.json().catch(() => null))
   if (!parsed.success) return NextResponse.json({ error: 'ข้อมูลเข้าสู่ระบบไม่ถูกต้อง' }, { status: 400 })
   const admin = await prisma.adminUser.findUnique({ where: { email: parsed.data.email.toLowerCase() } })
@@ -19,7 +20,8 @@ export async function POST(request: Request) {
   return NextResponse.json({ data: { id: admin.id, name: admin.name, role: admin.role } })
 }
 
-export async function DELETE() {
+export async function DELETE(request: Request) {
+  if (!hasValidSameOrigin(request)) return NextResponse.json({ error: 'คำขอไม่ถูกต้อง' }, { status: 403 })
   await clearAdminSession()
   return NextResponse.json({ data: { ok: true } })
 }
