@@ -94,6 +94,7 @@ model Order {
   id String @id @default(cuid())
   orderNumber String @unique
   customerId String
+  accessTokenHash String @unique
   fulfillment FulfillmentMethod
   status OrderStatus
   paymentMethod PaymentMethod
